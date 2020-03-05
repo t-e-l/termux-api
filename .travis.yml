@@ -41,7 +41,7 @@ before_install:
 - echo y | sdkmanager "ndk;${NDK_API}"
 before_deploy:
 - find . -name '*.apk'
-- mv ./app/build/outputs/apk/release/app-release.apk app-release.apk
+- mv ./app/build/outputs/apk/release/app-release-unsigned.apk app-release.apk
 - jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore keystore.jks -storepass
   $keystore_password -keypass $keystore_alias_password app-release.apk $keystore_alias
 - jarsigner -verify app-release.apk
