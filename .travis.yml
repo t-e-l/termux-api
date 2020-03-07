@@ -46,10 +46,11 @@ before_deploy:
   $keystore_password -keypass $keystore_alias_password app-release.apk $keystore_alias
 - jarsigner -verify app-release.apk
 - "${ANDROID_HOME}build-tools/${ANDROID_BUILD_API}/zipalign -v 4 app-release.apk ${APK_NAME}.apk"
+
 deploy:
   provider: releases
-  token:
-    secure: ${github_oauth}
+  api_key:
+    secure: ty0kFWtlWgKPFAno1psyh+74h7Dc+1wzIh+RZfkvc1tgYoOvK7GvalPszZMaN/wSPrt8TSrToJ7y669ywmINuJZvpDacxK50EnYUCxsFfAqOb+DGVuECEZKdlb2v4lHAE8Jum52aqUiez6bBG4pJagYCgCnmK1knfjPkdfjQygfHpQ7gpR6ocWB4xHhSDDvMd1U3Dt6L8x0a+G4V8adzsyA8YUXZ0GsGf3EpGZQF34a9e9TrpmWN8qkyVZavcNKbTOjQc6/fVvafhJUTn+wcuj5xzIM1PaXIAAyfsZkCLgJLDIc4qXZfSF+LbrbQKzNCiMbVOBxPKXDL2re13214PJiKzfobDwGK3Fh3gtkpidaan9i8/KKB98c4CeBLsooKJGYa/89U9LM3FZK5qGPMm17XoJ7+sljiT7sL7wICuBHBbNoB3BJOw0dja8O2AX+mLGeZPoMF0Tk1guIjgA2i75Q/foYPg5p9jMJKVWDjBcuijswe3AwzQxP7izYCO9L159OGfRboc7gd77/W6c8zK4w1FQwkHeVSuUbuhoVOASJBSFCRmUrP+ooJMZb+0xs/4iTt3+z0LG6CQC3Fhvgd9CeGfMVRDyaqlYTXV88zeAl8y1PhbAiB/db6rfbMIS99Geyz/2Jq4rLMzdEcuzRNvQG0l+aZUPqgJcmiJF37H+c=
   file: ${APK_NAME}.apk
   skip_cleanup: true
   on:
