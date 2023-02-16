@@ -1,19 +1,28 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion project.properties.compileSdkVersion.toInteger()
+    def appVersionName = System.getenv("TERMUX_API_APP_VERSION_NAME") ?: ""
+    def apkVersionTag = System.getenv("TERMUX_API_APK_VERSION_TAG") ?: ""
 
     defaultConfig {
         applicationId "com.termux.api"
-        minSdkVersion 24
-        targetSdkVersion 28
-        versionCode 48
-        versionName "0.48"
+        minSdkVersion project.properties.minSdkVersion.toInteger()
+        targetSdkVersion project.properties.targetSdkVersion.toInteger()
+        versionCode 51
+        versionName "0.50.1"
+
+        if (appVersionName) versionName = appVersionName
+        validateVersionName(versionName)
+
+        manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
+        manifestPlaceholders.TERMUX_APP_NAME = "Termux"
+        manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
     }
 
     signingConfigs {
         debug {
-            storeFile file('dev_keystore.jks')
+            storeFile file('testkey_untrusted.jks')
             keyAlias 'alias'
             storePassword 'xrj45yWGLbsO7W0v'
             keyPassword 'xrj45yWGLbsO7W0v'
@@ -22,7 +31,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
@@ -35,16 +45,46 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            if (variant.buildType.name == "debug") {
+                outputFileName = new File("termux-api_" + (apkVersionTag ? apkVersionTag : "debug") + ".apk")
+            } else if (variant.buildType.name == "release") {
+                outputFileName = new File("termux-api_" + (apkVersionTag ? apkVersionTag : "release") + ".apk")
+            }
+        }
+    }
+
+    packagingOptions {
+        // Remove terminal-emulator and termux-shared JNI libs added via termux-shared dependency
+        exclude 'lib/*/libtermux.so'
+        exclude 'lib/*/liblocal-socket.so'
+    }
 }
 
 dependencies {
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation 'androidx.biometric:biometric:1.0.0-alpha04'
-    implementation "androidx.media:media:1.1.0"
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha03'
+    implementation 'androidx.media:media:1.4.3'
+
+    implementation 'com.termux.termux-app:termux-shared:8c1749ef96'
+    // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
+    // If updates are done, republish there and sync project with gradle files here
+    // https://github.com/termux/termux-app/wiki/Termux-Libraries
+    // implementation 'com.termux:termux-shared:0.118.0'
 }
 
 task versionName {
-  doLast {
-    print android.defaultConfig.versionName
-  }
+    doLast {
+        print android.defaultConfig.versionName
+    }
+}
+
+@SuppressWarnings("UnnecessaryQualifiedReference")
+static def validateVersionName(String versionName) {
+    // https://semver.org/spec/v2.0.0.html#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    // ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+    if (!java.util.regex.Pattern.matches("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$", versionName))
+        throw new GradleException("The versionName '" + versionName + "' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html.")
 }
